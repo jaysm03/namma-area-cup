@@ -30,7 +30,11 @@ function decode(s){
   if (!s || s.length !== 126) return null;
   const out = [];
   for (let i=0;i<126;i+=2){ const t=s.slice(i,i+2); out.push(t==="zz"?null:parseInt(t,36)); }
-  return out.every(v => v===null || (v>=0 && v<64)) ? out : null;
+  if (!out.every(v => v===null || (v>=0 && v<64))) return null;
+  const prev = picks; picks = out;
+  let ok = true;
+  for (let m=0;m<63;m++){ if (out[m]!==null && !entrants(m).includes(out[m])) { ok=false; break; } }
+  picks = prev; return ok ? out : null;
 }
 function save(){ localStorage.setItem(KEY, encode()); }
 function load(){
@@ -77,7 +81,8 @@ async function copyLink(){
 }
 function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.hidden=false; setTimeout(()=>el.hidden=true,1800); }
 
-function card(){
+async function card(){
+  if (document.fonts) await document.fonts.ready;
   const c = document.createElement("canvas"); c.width=1080; c.height=1080;
   const x = c.getContext("2d");
   x.fillStyle="#f4df4b"; x.fillRect(0,0,1080,1080);
@@ -85,7 +90,7 @@ function card(){
   x.font="32px DM Sans, sans-serif"; x.fillText("64 Bangalore areas. One champion.",70,195);
   x.font="bold 30px DM Sans, sans-serif"; x.fillText("MY CHAMPION",70,330);
   x.font="bold 92px Space Grotesk, sans-serif"; x.fillText(picks[62]===null?"TBD":AREAS[picks[62]],70,430);
-  x.font="bold 30px DM Sans, sans-serif"; x.fillText("FINAL",70,560);
+  x.font="bold 30px DM Sans, sans-serif"; x.fillText("FINALISTS",70,560);
   x.font="44px DM Sans, sans-serif";
   [60,61].forEach((m,i)=>x.fillText(picks[m]===null?"TBD":AREAS[picks[m]],70,625+i*60));
   x.font="bold 30px DM Sans, sans-serif"; x.fillText("SEMIFINALISTS",70,820);
@@ -94,7 +99,7 @@ function card(){
   x.font="26px DM Sans, sans-serif"; x.fillText(location.host+location.pathname,70,1040);
   const a=document.createElement("a"); a.download="my-namma-area-cup.png"; a.href=c.toDataURL("image/png"); a.click();
 }
-function makeOwn(){ history.replaceState(null,"",location.pathname); viewOnly=false; picks=Array(63).fill(null); load(); render(); }
-function reset(){ if (confirm("Clear all your picks?")){ picks=Array(63).fill(null); save(); round=0; render(); } }
+function makeOwn(){ history.replaceState(null,"",location.pathname); viewOnly=false; picks=Array(63).fill(null); load(); round=0; render(); }
+function reset(){ if (confirm("Clear all your picks?")){ picks=Array(63).fill(null); save(); round=0; history.replaceState(null,"",location.pathname); viewOnly=false; render(); } }
 
 load(); render();
