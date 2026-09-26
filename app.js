@@ -52,8 +52,8 @@ function render(){
   document.getElementById("progress").textContent = done() + " of 63 picks made";
   document.getElementById("bar").style.width = (done()/63*100) + "%";
   document.getElementById("champ").innerHTML = champ === null
-    ? "Your champion: <em>not picked yet</em>"
-    : "Your champion: <strong>" + AREAS[champ] + "</strong>";
+    ? (viewOnly?"Their":"Your")+" champion: <em>not picked yet</em>"
+    : (viewOnly?"Their":"Your")+" champion: <strong>" + AREAS[champ] + "</strong>";
   document.getElementById("tabs").innerHTML = ROUNDS.map((r,i) => {
     let n = 0; for (let m=r.start;m<r.start+r.count;m++) if (picks[m]!==null) n++;
     return `<button class="tab ${i===round?"on":""}" onclick="round=${i};render()">${r.name}<small>${n}/${r.count}</small></button>`;

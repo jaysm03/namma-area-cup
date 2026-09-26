@@ -9,7 +9,7 @@ main{max-width:760px;margin:0 auto;padding:20px}
 .facts{display:flex;gap:18px;font-weight:700;font-size:14px;margin:14px 0}
 .facts b{font-size:26px;font-family:"Space Grotesk",sans-serif}
 .banner{background:#111;color:#fff;padding:12px 14px;border-radius:10px;margin:10px 0}
-.banner button{margin-left:8px;background:#f4df4b;border:0;padding:6px 10px;font-weight:700;border-radius:6px;cursor:pointer}
+.banner button{display:block;margin:8px 0 0;background:#f4df4b;border:0;padding:6px 10px;font-weight:700;border-radius:6px;cursor:pointer}
 .status{margin:18px 0}
 #champ{font-size:20px;margin-bottom:6px}
 #progress{font-size:14px;color:#555}
@@ -27,7 +27,8 @@ main{max-width:760px;margin:0 auto;padding:20px}
 .side.win{background:#f4df4b;box-shadow:3px 3px 0 #111}
 .side.lose{opacity:.4}
 .side.tbd{border-style:dashed;color:#888;font-weight:400;font-size:13px;cursor:default}
-.side:disabled{cursor:default}
+.side:disabled{cursor:default;color:#111}
+.side.lose:disabled{opacity:.5}
 .row{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
 .btn{border:2px solid #111;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn.dark{background:#111;color:#f4df4b}
