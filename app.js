@@ -39,6 +39,7 @@ function decode(s){
 function save(){ try { localStorage.setItem(KEY, encode()); } catch {} }
 function me(){ try { return JSON.parse(localStorage.getItem(META)) || {}; } catch { return {}; } }
 function setMe(o){ try { localStorage.setItem(META, JSON.stringify({...me(), ...o})); } catch {} }
+const champ = () => picks[62];
 const done = (p=picks) => p.filter(x => x !== null).length;
 const shareUrl = (p=picks) => location.origin + location.pathname + "#/b/" + encode(p);
 function nextOpen(){ for (let m=0;m<63;m++){ const [a,b]=entrants(m); if (picks[m]===null && a!==null && b!==null) return m; } return null; }
@@ -231,7 +232,6 @@ function renderSubmit(){
   $("note").addEventListener("input", e => { $("ncount").textContent = e.target.value.trim().length; setMe({note: e.target.value}); });
   $("handle").addEventListener("input", e => { e.target.value = e.target.value.replace(/^@+/, "").replace(/\s/g, ""); });
 }
-const champ = () => picks[62];
 
 async function submitPrediction(e){
   e.preventDefault();
@@ -259,7 +259,7 @@ function pagePredictions(){
   $("view").innerHTML = `
   <div class="pagehead"><a href="#/">BACK TO HOME</a><h1>Predictions</h1></div>
   <p class="sub" id="predtotal"></p>
-  <form class="search" onsubmit="event.preventDefault();predQ=$('q').value;predOff=0;loadPreds()">
+  <form class="search" onsubmit="event.preventDefault();predQ=$('q').value.trim().replace(/^@+/,'');predOff=0;loadPreds()">
     <span>@</span><input id="q" placeholder="Search @username" value="${esc(predQ)}"><button class="btn dark">SEARCH</button>
   </form>
   <div id="predlist" class="predlist"><p class="note">Loading...</p></div>
@@ -298,6 +298,13 @@ async function pageLeaderboard(){
   <div id="lb"><p class="note">Loading...</p></div>`;
   lbTab("c");
 }
+let lbOff = 0, lbTotal = 0;
+async function lbMore(){
+  lbOff += 25;
+  const r = await api(`/api/predictions?sort=points&offset=${lbOff}`);
+  $("lbitems").insertAdjacentHTML("beforeend", r.items.map(predCard).join(""));
+  if (lbOff + 25 >= r.total) $("lbmore").hidden = true;
+}
 async function lbTab(t){
   $("lbc").classList.toggle("on", t==="c"); $("lbp").classList.toggle("on", t==="p");
   try {
@@ -311,11 +318,14 @@ async function lbTab(t){
             <div class="lbbar"><div style="width:${pct}%"></div></div><span class="lbv">${c.n} · ${pct}%</span></div>`;
         }).join("");
     } else {
-      const r = await api("/api/predictions?sort=points");
+      lbOff = 0;
+      const r = await api("/api/predictions?sort=points&offset=0");
       const s = await api("/api/stats");
       $("lb").innerHTML = (s.settled ? `<p class="sub">${s.settled} of 63 matches decided. Points: 1, 2, 4, 8, 16, 32 per round.</p>` :
         `<p class="sub">No matches decided yet. Scores appear once the Round of 64 results are in.</p>`) +
-        r.items.map(predCard).join("");
+        `<div id="lbitems" class="predlist">${r.items.map(predCard).join("")}</div>` +
+        (r.total > 25 ? `<div class="row"><button class="btn outline" id="lbmore" onclick="lbMore()">LOAD MORE</button></div>` : "");
+      lbTotal = r.total;
     }
   } catch (x) { $("lb").innerHTML = `<p class="err">${esc(x.message)}</p>`; }
 }

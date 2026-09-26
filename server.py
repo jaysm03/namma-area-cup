@@ -94,10 +94,13 @@ class H(SimpleHTTPRequestHandler):
 
     def stats(self):
         rs, w = rows(), winners(); champs = {}
+        good = 0
         for r in rs:
-            c = int(r["picks"][124:126], 36); champs[c] = champs.get(c, 0) + 1
+            p = parse_picks(r["picks"])
+            if p is None: continue
+            good += 1; champs[p[62]] = champs.get(p[62], 0) + 1
         top = sorted(champs.items(), key=lambda kv: -kv[1])
-        self.send_json({"total": len(rs), "champions": [{"area": a, "n": n} for a, n in top],
+        self.send_json({"total": good, "champions": [{"area": a, "n": n} for a, n in top],
                         "settled": sum(x is not None for x in w)})
 
     def listing(self, q):
@@ -105,7 +108,9 @@ class H(SimpleHTTPRequestHandler):
         out = []
         for r in rows():
             if needle and needle not in r["handle"].lower(): continue
-            p = parse_picks(r["picks"]); pts, cor, st = score(p, w)
+            p = parse_picks(r["picks"])
+            if p is None: continue
+            pts, cor, st = score(p, w)
             out.append({**r, "champion": p[62], "points": pts, "correct": cor, "settled": st})
         if q.get("sort") == "points": out.sort(key=lambda x: (-x["points"], x["created"]))
         for i, x in enumerate(out): x["rank"] = i + 1 if q.get("sort") == "points" else None
@@ -119,6 +124,13 @@ class H(SimpleHTTPRequestHandler):
             body = json.loads(self.rfile.read(min(n, 20000)) or b"{}")
         except Exception: return self.send_json({"error": "Bad request"}, 400)
         if u.path == "/api/prediction": return self.submit(body)
+        if u.path == "/api/admin/results":
+            if not secrets.compare_digest(str(body.get("token", "")), ADMIN): return self.send_json({"error": "forbidden"}, 403)
+            w = body.get("winners")
+            if not (isinstance(w, list) and len(w) == 63 and all(x is None or (isinstance(x, int) and 0 <= x < 64) for x in w)):
+                return self.send_json({"error": "winners must be 63 x null|0-63"}, 400)
+            tmp = RESULTS + ".tmp"; json.dump({"winners": w}, open(tmp, "w")); os.replace(tmp, RESULTS)
+            return self.send_json({"ok": True, "settled": sum(x is not None for x in w)})
         if u.path == "/api/admin/hide":
             if not secrets.compare_digest(str(body.get("token", "")), ADMIN): return self.send_json({"error": "forbidden"}, 403)
             with db() as c: c.execute("update preds set hidden=1 where id=?", (int(body.get("id", 0)),))
